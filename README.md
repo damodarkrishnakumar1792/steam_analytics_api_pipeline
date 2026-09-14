@@ -27,7 +27,7 @@ Steam API  -->  Python Ingestion Script  -->  Databricks (Raw Table)
 
 Pull data directly from Steam's available endpoints (e.g., the Steam Web API or Steamspy, depending on what data you need — player counts, app/game metadata, pricing, reviews, etc.). Review Steam's API documentation and terms of use before pulling data, and note any authentication or rate-limit requirements for the specific endpoint you use.
 
-### 2. Develop a Python Ingestion Script
+### 2. Develop and run a Python Ingestion Script
 
 Using an AI coding tool of your choice (e.g., Claude, GitHub Copilot, ChatGPT), develop a Python script that:
 - Calls the Steam endpoint(s) and retrieves the desired data (handle pagination and rate limits as needed).
@@ -35,6 +35,7 @@ Using an AI coding tool of your choice (e.g., Claude, GitHub Copilot, ChatGPT), 
 - Pushes the resulting data into a **raw table** in a Databricks schema, using a library such as `databricks-sql-connector` or the Databricks SDK to write directly, or by staging the data as a file (CSV/Parquet) and loading it via a Databricks notebook or SQL `COPY INTO` command.
 
 Recommended raw table naming convention: `raw.steam_<entity_name>` (e.g., `raw.steam_games`, `raw.steam_player_counts`).
+This script has to be run as a Databricks job.
 
 ### 3. Develop dbt Models
 
@@ -75,6 +76,8 @@ dbt run
 ```
 
 Then log in to your Databricks workspace and verify that the expected tables/views have been created in the target schema, with the correct row counts and transformations applied. Use `dbt test` to run any data quality tests you've defined.
+
+### Note : The Steps 2,3,4 and 5 can be automated as a Github Actions workflow.
 
 ### 6. Connect Power BI to Databricks
 
