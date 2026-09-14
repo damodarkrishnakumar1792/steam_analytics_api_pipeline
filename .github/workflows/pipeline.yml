@@ -61,4 +61,4 @@ jobs:
       - name: Run dbt build (run + test)
         run: |
           cd dbt_steam_api
-          dbt build --full-refresh
+          dbt build
