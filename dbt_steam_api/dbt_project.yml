@@ -1,0 +1,20 @@
+name: dbt_steam_api
+version: 1.0.0
+config-version: 2
+profile: databricks_free
+model-paths:
+  - models
+test-paths:
+  - tests
+target-path: target
+clean-targets:
+  - target
+  - dbt_packages
+models:
+  dbt_steam_api:
+    staging:
+      +materialized: table
+      +schema: staging
+    marts:
+      +materialized: table
+      +schema: marts

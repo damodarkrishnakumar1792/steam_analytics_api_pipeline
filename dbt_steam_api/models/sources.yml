@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: raw_steam
+    schema: raw_steam
+    tables:
+      - name: raw_apps
+        description: "Raw Steam app data from SteamSpy API with full details"
