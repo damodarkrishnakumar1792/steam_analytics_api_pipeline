@@ -1,0 +1,59 @@
+name: Steam Data Pipeline
+
+on:
+  schedule:
+    - cron: '0 6 15 * *'
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ingestion script
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+        run: python api_call_raw_data_load.py
+
+      - name: Install dbt
+        run: pip install dbt-databricks
+
+      - name: Create profiles.yml
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << EOF
+          databricks_free:
+            target: dev
+            outputs:
+              dev:
+                type: databricks
+                catalog: workspace
+                schema: raw_steam
+                host: $DATABRICKS_HOST
+                http_path: $DATABRICKS_HTTP_PATH
+                token: $DATABRICKS_TOKEN
+                threads: 4
+          EOF
+
+      - name: Run dbt build (run + test)
+        run: |
+          cd dbt_steam_api
+          dbt build
