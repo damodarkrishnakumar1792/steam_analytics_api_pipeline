@@ -69,31 +69,34 @@ def fetch_app_list():
     """
     Fetch list of all app IDs (lightweight).
     """
-    url = f"{STEAMSPY_BASE}?request=all&page=0"
-    
-    try:
-        response = requests.get(url, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
-        data = response.json()
-        
-        # --- NEW: filter out app IDs already in the raw table ---
-        table_exists = spark.catalog.tableExists(TARGET_TABLE)
+    table_exists = spark.catalog.tableExists(TARGET_TABLE)
+    if table_exists:
+        existing_ids_df = spark.sql(f"SELECT DISTINCT appid FROM {TARGET_TABLE}")
+        existing_ids = set(row['appid'] for row in existing_ids_df.collect())
+    else:
+        existing_ids = set()
 
-        if table_exists:
-            existing_ids_df = spark.sql(f"SELECT DISTINCT appid FROM {TARGET_TABLE}")
-            existing_ids = set(row['appid'] for row in existing_ids_df.collect())
-        else:
-            existing_ids = set()
+    new_ids = []
+    page = 0
+    while len(new_ids) < MAX_APPS:
+        url = f"{STEAMSPY_BASE}?request=all&page={page}"
+        try:
+            response = requests.get(url, timeout=REQUEST_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+        except Exception as e:
+            print(f"ERROR fetching page {page}: {e}")
+            break
 
-        all_ids = list(data.keys())
-        new_ids = [aid for aid in all_ids if int(aid) not in existing_ids]
-        # ---------------------------------------------------------
+        if not data:  # empty page = no more data
+            break
 
-        return new_ids[:MAX_APPS]
-        
-    except Exception as e:
-        print(f"ERROR fetching app list: {e}")
-        return []
+        page_ids = [aid for aid in data.keys() if int(aid) not in existing_ids]
+        new_ids.extend(page_ids)
+        page += 1
+        time.sleep(1)  # be polite between page requests too
+
+    return new_ids[:MAX_APPS]
 
 
 def fetch_app_details(appid):
